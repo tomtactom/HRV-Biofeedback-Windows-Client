@@ -60,6 +60,74 @@ class StartupMenuContractTests(unittest.TestCase):
         ]:
             self.assertIn(method, self.methods)
 
+    def test_update_controls_action_references_are_declared_or_guarded(self) -> None:
+        build_menus = next(
+            node for node in self.main_window.body if isinstance(node, ast.FunctionDef) and node.name == "_build_menus"
+        )
+        update_controls = next(
+            node for node in self.main_window.body if isinstance(node, ast.FunctionDef) and node.name == "_update_controls"
+        )
+        declared_actions: set[str] = set()
+        for node in ast.walk(build_menus):
+            if not isinstance(node, ast.Assign):
+                continue
+            for target in node.targets:
+                if (
+                    isinstance(target, ast.Attribute)
+                    and isinstance(target.value, ast.Name)
+                    and target.value.id == "self"
+                    and target.attr.endswith("_action")
+                ):
+                    declared_actions.add(target.attr)
+
+        missing: list[str] = []
+
+        def guarded_attrs(test: ast.AST) -> set[str]:
+            if (
+                isinstance(test, ast.Call)
+                and isinstance(test.func, ast.Name)
+                and test.func.id == "hasattr"
+                and len(test.args) >= 2
+                and isinstance(test.args[0], ast.Name)
+                and test.args[0].id == "self"
+                and isinstance(test.args[1], ast.Constant)
+                and isinstance(test.args[1].value, str)
+            ):
+                return {test.args[1].value}
+            if isinstance(test, ast.BoolOp):
+                out: set[str] = set()
+                for value in test.values:
+                    out.update(guarded_attrs(value))
+                return out
+            return set()
+
+        def visit(node: ast.AST, active_guards: set[str]) -> None:
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "setEnabled"
+                and isinstance(node.func.value, ast.Attribute)
+                and isinstance(node.func.value.value, ast.Name)
+                and node.func.value.value.id == "self"
+            ):
+                attr = node.func.value.attr
+                if attr.endswith("_action") and attr not in declared_actions and attr not in active_guards:
+                    missing.append(attr)
+
+            if isinstance(node, ast.If):
+                next_guards = active_guards | guarded_attrs(node.test)
+                for child in node.body:
+                    visit(child, next_guards)
+                for child in node.orelse:
+                    visit(child, active_guards)
+                return
+
+            for child in ast.iter_child_nodes(node):
+                visit(child, active_guards)
+
+        visit(update_controls, set())
+        self.assertEqual([], sorted(set(missing)))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3651,7 +3651,6 @@ class MainWindow(QMainWindow):
             self.start_skip_baseline_action.setEnabled((not running) or self.phase == "baseline")
             self.pause_action.setEnabled(running)
             self.stop_action.setEnabled(running or bool(self.session_rows))
-            self.export_action.setEnabled(bool(self.session_rows))
 
         ble_busy = bool(self.ble_worker and self.ble_worker.isRunning())
         self.scan_button.setEnabled(not ble_busy)
