@@ -1,0 +1,18 @@
+# Optionale Erweiterungen für spätere Experimente.
+# Sie sind absichtlich NICHT Teil von requirements.txt, damit die Hauptapp stabil bleibt.
+# Vor Installation jeweils Lizenz, Packaging und Windows-BLE-Stabilität prüfen.
+
+# Async-Qt-Experiment:
+# qasync>=0.28
+
+# Forschungs-/Offline-HRV-Auswertung:
+# scipy>=1.14
+# neurokit2>=0.2
+
+# Alternatives UI-Prototyping, nicht Hauptapp:
+# dearpygui>=2.0
+# flet>=0.25
+# nicegui>=2.0
+
+# Fluent-Design-Widgets: Lizenz/Kompatibilität vor Nutzung prüfen.
+# PySide6-Fluent-Widgets>=1.11
